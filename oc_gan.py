@@ -251,7 +251,7 @@ _ = sess.run(T_solver,
                 y_tar:y_pre
                 })
 
-q = np.divide(len(x_train), mb_size)
+q = int(np.divide(len(x_train), mb_size))
 
 # n_epoch = 1
 #
@@ -307,7 +307,7 @@ for n_epoch in range(n_round):
     prob, _ = sess.run([D_prob_real, D_logit_real], feed_dict={X_oc: x_test})
     y_pred = np.argmax(prob, axis=1)
     conf_mat = classification_report(y_test, y_pred, target_names=['benign', 'vandal'], digits=4)
-    f1_score.append(float(filter(None, conf_mat.strip().split(" "))[12]))
+    f1_score.append(float(list(filter(None, conf_mat.strip().split(" ")))[12]))
     # print conf_mat
 
 if not dra_tra_pro:
