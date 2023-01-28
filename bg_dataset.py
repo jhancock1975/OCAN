@@ -53,7 +53,7 @@ def load_data_unbal(x_benign, x_vandal, n_b_lab, n_v_lab, n_b_test, n_v_test, oh
     if oh:
         y_lab = one_hot(y_lab, 3)
 
-    print x_lab_ben.shape, x_lab_van.shape
+    print( x_lab_ben.shape, x_lab_van.shape)
 
 
     # unlabeled data (unsupervised)
@@ -61,7 +61,7 @@ def load_data_unbal(x_benign, x_vandal, n_b_lab, n_v_lab, n_b_test, n_v_test, oh
     x_unl_van = x_vandal[len(x_lab_van):-3*n_v_test]
     x_unl = x_unl_ben.tolist() + x_unl_van.tolist()
     x_unl = np.array(x_unl)
-    print x_unl_ben.shape, x_unl_van.shape
+    print( x_unl_ben.shape, x_unl_van.shape)
 
 
     # test data.
@@ -71,6 +71,6 @@ def load_data_unbal(x_benign, x_vandal, n_b_lab, n_v_lab, n_b_test, n_v_test, oh
     x_test = np.array(x_test)
     y_test = np.ones(len(x_test), dtype=np.int32)
     y_test[len(x_benign_test):] = 0
-    print x_benign_test.shape, x_vandal_test.shape
+    print( x_benign_test.shape, x_vandal_test.shape)
 
     return x_lab, y_lab, x_unl, x_test, y_test

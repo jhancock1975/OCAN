@@ -5,7 +5,7 @@
 '''
 import numpy as np
 import tensorflow as tf
-from sklearn.neighbors.kde import KernelDensity
+from sklearn.neighbors import KernelDensity
 import matplotlib.pyplot as plt
 
 
@@ -20,7 +20,7 @@ def one_hot(x, depth):
 def xavier_init(size): # initialize the weight-matrix W.
     in_dim = size[0]
     xavier_stddev = 1. / tf.sqrt(in_dim / 2.)
-    return tf.random_normal(shape=size, stddev=xavier_stddev)
+    return tf.random.normal(shape=size, stddev=xavier_stddev)
 
 
 def sample_Z(m, n):   # generating the input for G.
@@ -64,24 +64,24 @@ def low_density(prob, thrld, sf):
 
 def pull_away_loss(g):
 
-    Nor = tf.norm(g, axis=1)
+    Nor = tf.norm(tensor=g, axis=1)
     Nor_mat = tf.tile(tf.expand_dims(Nor, axis=1),
-                      [1, tf.shape(g)[1]])
+                      [1, tf.shape(input=g)[1]])
     X = tf.divide(g, Nor_mat)
-    X_X = tf.square(tf.matmul(X, tf.transpose(X)))
+    X_X = tf.square(tf.matmul(X, tf.transpose(a=X)))
     mask = tf.subtract(tf.ones_like(X_X),
-                       tf.diag(
-                           tf.ones([tf.shape(X_X)[0]]))
+                       tf.linalg.tensor_diag(
+                           tf.ones([tf.shape(input=X_X)[0]]))
                        )
-    pt_loss = tf.divide(tf.reduce_sum(tf.multiply(X_X, mask)),
+    pt_loss = tf.divide(tf.reduce_sum(input_tensor=tf.multiply(X_X, mask)),
                         tf.multiply(
-                            tf.cast(tf.shape(X_X)[0], tf.float32),
-                            tf.cast(tf.shape(X_X)[0]-1, tf.float32)))
+                            tf.cast(tf.shape(input=X_X)[0], tf.float32),
+                            tf.cast(tf.shape(input=X_X)[0]-1, tf.float32)))
 
     return pt_loss
 
 
-def draw_trend(D_real_prob, D_fake_prob, D_val_prob, fm_loss, f1):
+def draw_trend(D_real_prob, D_fake_prob, D_val_prob, fm_loss, f1, output_img_name=None):
 
     fig = plt.figure()
     fig.patch.set_facecolor('w')
@@ -110,7 +110,10 @@ def draw_trend(D_real_prob, D_fake_prob, D_val_prob, fm_loss, f1):
     plt.xlabel("# of epoch")
     plt.ylabel("F1")
     # plt.legend([p1, p2, p3, p4, p5], ["d_real_prob", "d_fake_prob", "d_val_prob", "fm_loss","f1"], loc=1, bbox_to_anchor=(1, 3.5), borderaxespad=0.)
-    plt.show()
+    if output_img_name:
+        plt.savefig(output_img_name)
+    else:
+        plt.show()
 
 
 def plot_decision_boundary(pred_func, X, y):

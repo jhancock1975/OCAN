@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 '''
     Author: Panpan Zheng
     Date created:  2/15/2018
@@ -49,9 +50,9 @@ Z_dim = G_dim[0]
 
 # define placeholders for labeled-data, unlabeled-data, noise-data and target-data.
 
-X_oc = tf.placeholder(tf.float32, shape=[None, dim_input])
-Z = tf.placeholder(tf.float32, shape=[None, Z_dim])
-X_tar = tf.placeholder(tf.float32, shape=[None, dim_input])
+X_oc = tf.compat.v1.placeholder(tf.float32, shape=[None, dim_input])
+Z = tf.compat.v1.placeholder(tf.float32, shape=[None, Z_dim])
+X_tar = tf.compat.v1.placeholder(tf.float32, shape=[None, dim_input])
 # X_val = tf.placeholder(tf.float32, shape=[None, dim_input])
 
 
@@ -132,21 +133,21 @@ D_prob_tar_gen, D_logit_tar_gen, D_h2_tar_gen = discriminator_tar(G_sample)
 
 
 # disc. loss
-y_real= tf.placeholder(tf.int32, shape=[None, D_dim[3]])
-y_gen = tf.placeholder(tf.int32, shape=[None, D_dim[3]])
+y_real= tf.compat.v1.placeholder(tf.int32, shape=[None, D_dim[3]])
+y_gen = tf.compat.v1.placeholder(tf.int32, shape=[None, D_dim[3]])
 
-D_loss_real = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=D_logit_real,labels=y_real))
-D_loss_gen = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=D_logit_gen, labels=y_gen))
+D_loss_real = tf.reduce_mean(input_tensor=tf.nn.softmax_cross_entropy_with_logits(logits=D_logit_real,labels=tf.stop_gradient(y_real)))
+D_loss_gen = tf.reduce_mean(input_tensor=tf.nn.softmax_cross_entropy_with_logits(logits=D_logit_gen, labels=tf.stop_gradient(y_gen)))
 
 ent_real_loss = -tf.reduce_mean(
-                        tf.reduce_sum(
-                            tf.multiply(D_prob_real, tf.log(D_prob_real)), 1
+                        input_tensor=tf.reduce_sum(
+                            input_tensor=tf.multiply(D_prob_real, tf.math.log(D_prob_real)), axis=1
                         )
                     )
 
 ent_gen_loss = -tf.reduce_mean(
-                        tf.reduce_sum(
-                            tf.multiply(D_prob_gen, tf.log(D_prob_gen)), 1
+                        input_tensor=tf.reduce_sum(
+                            input_tensor=tf.multiply(D_prob_gen, tf.math.log(D_prob_gen)), axis=1
                         )
                     )
 
@@ -156,10 +157,10 @@ D_loss = D_loss_real + D_loss_gen + 1.85 * ent_real_loss
 # gene. loss
 pt_loss = pull_away_loss(D_h2_tar_gen)
 
-y_tar= tf.placeholder(tf.int32, shape=[None, D_dim[3]])
-T_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=D_logit_tar, labels=y_tar))
-tar_thrld = tf.divide(tf.reduce_max(D_prob_tar_gen[:,-1]) +
-                      tf.reduce_min(D_prob_tar_gen[:,-1]), 2)
+y_tar= tf.compat.v1.placeholder(tf.int32, shape=[None, D_dim[3]])
+T_loss = tf.reduce_mean(input_tensor=tf.nn.softmax_cross_entropy_with_logits(logits=D_logit_tar, labels=tf.stop_gradient(y_tar)))
+tar_thrld = tf.divide(tf.reduce_max(input_tensor=D_prob_tar_gen[:,-1]) +
+                      tf.reduce_min(input_tensor=D_prob_tar_gen[:,-1]), 2)
 
 # tar_thrld = tf.reduce_mean(D_prob_tar_gen[:,-1])
 
@@ -168,23 +169,23 @@ indicator = tf.sign(
               tf.subtract(D_prob_tar_gen[:,-1],
                           tar_thrld))
 condition = tf.greater(tf.zeros_like(indicator), indicator)
-mask_tar = tf.where(condition, tf.zeros_like(indicator), indicator)
-G_ent_loss = tf.reduce_mean(tf.multiply(tf.log(D_prob_tar_gen[:,-1]), mask_tar))
+mask_tar = tf.compat.v1.where(condition, tf.zeros_like(indicator), indicator)
+G_ent_loss = tf.reduce_mean(input_tensor=tf.multiply(tf.math.log(D_prob_tar_gen[:,-1]), mask_tar))
 # G_ent_loss = tf.reduce_mean(tf.log(D_prob_tar_gen[:,-1]))
 
 fm_loss = tf.reduce_mean(
-            tf.sqrt(
+            input_tensor=tf.sqrt(
                 tf.reduce_sum(
-                    tf.square(D_logit_real - D_logit_gen), 1
+                    input_tensor=tf.square(D_logit_real - D_logit_gen), axis=1
                     )
                 )
             )
 
 G_loss = pt_loss + G_ent_loss + fm_loss
 
-D_solver = tf.train.GradientDescentOptimizer(learning_rate=1e-3).minimize(D_loss, var_list=theta_D)
-G_solver = tf.train.AdamOptimizer().minimize(G_loss, var_list=theta_G)
-T_solver = tf.train.GradientDescentOptimizer(learning_rate=1e-3).minimize(T_loss, var_list=theta_T)
+D_solver = tf.compat.v1.train.GradientDescentOptimizer(learning_rate=1e-3).minimize(D_loss, var_list=theta_D)
+G_solver = tf.compat.v1.train.AdamOptimizer().minimize(G_loss, var_list=theta_G)
+T_solver = tf.compat.v1.train.GradientDescentOptimizer(learning_rate=1e-3).minimize(T_loss, var_list=theta_T)
 
 
 # Load data....
@@ -239,8 +240,8 @@ else:
     y_test[490:] = 1
 
 
-sess = tf.Session()
-sess.run(tf.global_variables_initializer())
+sess = tf.compat.v1.Session()
+sess.run(tf.compat.v1.global_variables_initializer())
 
 # pre-training for target distribution
 
@@ -311,8 +312,8 @@ for n_epoch in range(n_round):
 
 if not dra_tra_pro:
     acc = np.sum(y_pred == y_test)/float(len(y_pred))
-    print conf_mat
-    print "acc:%s"%acc
+    print( conf_mat)
+    print( "acc:%s"%acc)
 
 if dra_tra_pro:
     draw_trend(d_ben_pro, d_fake_pro, d_val_pro, fm_loss_coll, f1_score)
