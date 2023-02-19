@@ -29,13 +29,14 @@ import os
 from bg_utils import pull_away_loss, one_hot, xavier_init, sample_shuffle_spv, sample_shuffle_uspv, sample_Z, draw_trend
 from bg_dataset import load_data, load_data_unbal
 import sys
+import pdb
 
 class OneClassGan(object):
   """
   based on https://github.com/PanpanZheng/OCAN ocgan.py
   """
 
-  def __init__(self, mb_size, n_maj_class, pretrain_size, n_round, max_instances=None, pos_label=1, neg_label=0  ):
+  def set_params(self, mb_size, n_maj_class, pretrain_size, n_round, max_instances=None, pos_label=1, neg_label=0  ):
     """
     Parameters
     ----------
@@ -57,8 +58,10 @@ class OneClassGan(object):
     self._pretrain_size = pretrain_size
     self._pos_label = pos_label
     self._neg_label = neg_label
+    self._max_instances = None
+    self._n_round = n_round
 
-  def fit(X, y):
+  def fit(self, X, y):
       """
       fit one-class generative adversarial network classifier
       this code was modified from oc_gan.py
@@ -217,9 +220,9 @@ class OneClassGan(object):
       T_solver = tf.compat.v1.train.GradientDescentOptimizer(learning_rate=1e-3).minimize(T_loss, var_list=theta_T)
       
       
-      idx = np.random.randint(X.shape[0], size=self._n_maj_class)
-      x_benign = X[y == self._neg_label][idx]
-      x_vandal = X[y == self._pos_labl]
+      x_benign = X[y == self._neg_label].sample(n=self._n_maj_class).values
+      x_vandal = X[y == self._pos_label].values
+      pdb.set_trace()
      
       x_benign = sample_shuffle_uspv(x_benign)
       x_vandal = sample_shuffle_uspv(x_vandal)
@@ -236,8 +239,8 @@ class OneClassGan(object):
       
       x_train = x_pre
       
-      y_real_mb = one_hot(np.zeros(mb_size), 2)
-      y_fake_mb = one_hot(np.ones(mb_size), 2)
+      y_real_mb = one_hot(np.zeros(self._mb_size), 2)
+      y_fake_mb = one_hot(np.ones(self._mb_size), 2)
      
       
       sess = tf.compat.v1.Session()
@@ -252,7 +255,7 @@ class OneClassGan(object):
                       y_tar:y_pre
                       })
       
-      q = int(np.divide(len(x_train), mb_size))
+      q = int(np.divide(len(x_train), self._mb_size))
       
       # n_epoch = 1
       #
@@ -263,7 +266,7 @@ class OneClassGan(object):
       d_val_pro = list()
       
       
-      for n_epoch in range(n_round):
+      for n_epoch in range(self._n_round):
       
           X_mb_oc = sample_shuffle_uspv(x_train)
       
@@ -271,16 +274,16 @@ class OneClassGan(object):
       
               _, D_loss_curr, ent_real_curr = sess.run([D_solver, D_loss, ent_real_loss],
                                                 feed_dict={
-                                                           X_oc: X_mb_oc[n_batch*mb_size:(n_batch+1)*mb_size],
-                                                           Z: sample_Z(mb_size, Z_dim),
+                                                           X_oc: X_mb_oc[n_batch*self._mb_size:(n_batch+1)*self._mb_size],
+                                                           Z: sample_Z(self._mb_size, Z_dim),
                                                            y_real: y_real_mb,
                                                            y_gen: y_fake_mb
                                                            })
       
               _, G_loss_curr, fm_loss_curr = sess.run([G_solver, G_loss, fm_loss],
               # _, G_loss_curr, fm_loss_, kld_ = sess.run([G_solver, G_loss, fm_loss, pt_loss + G_ent_loss],
-                                                 feed_dict={Z: sample_Z(mb_size, Z_dim),
-                                                            X_oc: X_mb_oc[n_batch*mb_size:(n_batch+1)*mb_size],
+                                                 feed_dict={Z: sample_Z(self._mb_size, Z_dim),
+                                                            X_oc: X_mb_oc[n_batch*self._mb_size:(n_batch+1)*self._mb_size],
                                                             })
       
       self._sess = sess
@@ -290,25 +293,25 @@ class OneClassGan(object):
       self._trained = True
           # print conf_mat
 
-    class NotTrainedError(Exception):
-      """ Thrown when predict_proba called before fit is called.
-      """      
-      pass
+  class NotTrainedError(Exception):
+    """ Thrown when predict_proba called before fit is called.
+    """      
+    pass
 
-    def  predict_proba(X):
-      """
-      return class probabilities for instances X
-      
-      Parameters
-      ----------
-      X: list-like
-        two dimensional array of classifier input values
-      """
-      if not self._trained:
-        raise  NotTrainedError("OneClassGan is not trained yet.  Please call the fit() function first")
-      else:
-        prob, _ = self._sess.run([self._D_prob_real, self._D_logit_real], feed_dict={self._X_oc: x_test})
-        return prob
+  def  predict_proba(self, X):
+    """
+    return class probabilities for instances X
+    
+    Parameters
+    ----------
+    X: list-like
+      two dimensional array of classifier input values
+    """
+    if not self._trained:
+      raise  NotTrainedError("OneClassGan is not trained yet.  Please call the fit() function first")
+    else:
+      prob, _ = self._sess.run([self._D_prob_real, self._D_logit_real], feed_dict={self._X_oc: X})
+      return prob
 
       
 
