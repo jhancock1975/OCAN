@@ -222,7 +222,6 @@ class OneClassGan(object):
       
       x_benign = X[y == self._neg_label].sample(n=self._n_maj_class).values
       x_vandal = X[y == self._pos_label].values
-      pdb.set_trace()
      
       x_benign = sample_shuffle_uspv(x_benign)
       x_vandal = sample_shuffle_uspv(x_vandal)
