@@ -222,7 +222,7 @@ class OneClassGan(object):
       
       x_benign = X[y == self._neg_label].sample(n=self._n_maj_class).values
       x_vandal = X[y == self._pos_label].values
-     
+
       x_benign = sample_shuffle_uspv(x_benign)
       x_vandal = sample_shuffle_uspv(x_vandal)
       
@@ -313,7 +313,14 @@ class OneClassGan(object):
       return prob
 
       
-
+class OneClassGanMinority(OneClassGan):
+  # this class is the same as OneClassGan, but fits on
+  # the minority (positive) instead of the majority class
+  # we accomplish this by swapping the labels
+  def fit(self, X, y):
+    self._neg_label, self._pos_label = self._pos_label, self._neg_label
+    super().fit(X, y)
+    self._neg_label, self._pos_label = self._pos_label, self._neg_label
 
 if __name__ == "__main__":
   exit(0)
