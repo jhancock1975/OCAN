@@ -220,7 +220,8 @@ class OneClassGan(object):
       T_solver = tf.compat.v1.train.GradientDescentOptimizer(learning_rate=1e-3).minimize(T_loss, var_list=theta_T)
       
       pdb.set_trace()
-      x_benign = X[y == self._neg_label].sample(n=self._n_maj_class).values
+      x_benign = X[y == self._neg_label]
+      x_benign = x_benign.sample(n=min(self._n_maj_class, len(x_benign)).values
       x_vandal = X[y == self._pos_label].values
 
       x_benign = sample_shuffle_uspv(x_benign)
