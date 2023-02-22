@@ -219,7 +219,7 @@ class OneClassGan(object):
       G_solver = tf.compat.v1.train.AdamOptimizer().minimize(G_loss, var_list=theta_G)
       T_solver = tf.compat.v1.train.GradientDescentOptimizer(learning_rate=1e-3).minimize(T_loss, var_list=theta_T)
       
-      
+      pdb.set_trace()
       x_benign = X[y == self._neg_label].sample(n=self._n_maj_class).values
       x_vandal = X[y == self._pos_label].values
 
